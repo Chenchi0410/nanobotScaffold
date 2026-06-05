@@ -6,7 +6,7 @@
   - _dispatch_outbound() 是一个永久循环，从总线取出站消息路由到对应渠道
   - _send_with_retry() 指数退避重试，发送失败不丢消息
 """
-
+# 这个文件解决一个问题：怎么把所有渠道组装在一起，并把 Agent 的回复送到正确的渠道？
 from __future__ import annotations
 
 import asyncio

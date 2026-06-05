@@ -2,7 +2,7 @@
 模式 3：生命周期 Hook — 观察者模式 + 组合模式
 
 设计要点：
-  - AgentHook 定义 7 个生命周期钩子，子类只需覆盖关心的方法
+  - AgentHook 定义 5 个生命周期钩子，子类只需覆盖关心的方法
   - CompositeHook 把多个 Hook 组合在一起，扇出调用
   - _for_each_hook_safe() 做错误隔离：单个 Hook 异常不影响其他
   - SDKCaptureHook 是一个具体 Hook 示例：收集运行数据，不侵入核心逻辑
