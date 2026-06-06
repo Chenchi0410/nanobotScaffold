@@ -27,7 +27,7 @@ scaffold/
 │   ├── registry.py          #   静态元数据注册表
 │   ├── factory.py           #   配置驱动工厂
 │   ├── demo_provider.py     #   示例：本地模拟
-│   ├── openai_provider.py   #   示例：OpenAI API
+│   ├── openai_provider.py   #   示例：OpenAI API（兼容任意 OpenAI 协议）
 │   └── anthropic_provider.py#   示例：Anthropic API
 │
 ├── agent/                   # 模式 3：生命周期 Hook
@@ -59,22 +59,74 @@ scaffold/
 | 5 | 配置驱动工厂 | `providers/factory.py`, `providers/registry.py` | 元组注册表 → 工厂函数 |
 | 6 | Facade 门面 | `facade.py` | `Nanobot.from_config()` 一行创建 |
 
-## 运行
+## 快速开始
+
+### 1. 环境搭建
 
 ```bash
 cd D:\nanobotScaffold
 
-# 安装依赖
-pip install -e .
+# 使用 uv 创建虚拟环境（推荐）
+uv venv --python 3.11
 
-# 自动演示（不需要 API Key）
+# 安装依赖
+uv pip install -e .
+```
+
+### 2. 配置模型
+
+创建配置文件 `~/.scaffold/config.json`：
+
+```json
+{
+  "provider": "mimo",
+  "model": "mimo-v2.5-pro",
+  "api_key": "your-api-key-here"
+}
+```
+
+已支持的 Provider：
+
+| Provider | backend | 说明 |
+|----------|---------|------|
+| `openai` | openai | OpenAI 官方 API |
+| `deepseek` | openai | DeepSeek（复用 OpenAI 兼容协议） |
+| `mimo` | openai | 小米 MiMo（复用 OpenAI 兼容协议） |
+| `anthropic` | anthropic | Anthropic Claude API |
+| `demo` | demo | 本地模拟，不需要 API Key |
+
+> API Key 也支持通过环境变量传入（优先级：环境变量 > 配置文件）：
+> `MIMO_API_KEY`、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`ANTHROPIC_API_KEY`
+
+### 3. 运行
+
+```bash
+# 自动演示（不需要 API Key，使用 Demo Provider）
 python -m scaffold demo
 
-# 交互式对话
+# 交互式对话（读取 ~/.scaffold/config.json）
 python -m scaffold chat
 
 # SDK 调用示例
 python -m scaffold sdk
+```
+
+SDK 代码调用：
+
+```python
+import asyncio
+from scaffold.facade import Nanobot
+
+async def main():
+    bot = Nanobot.from_config({
+        "provider": "mimo",
+        "model": "mimo-v2.5-pro",
+        "api_key": "your-api-key"
+    })
+    result = await bot.run("你好")
+    print(result.content)
+
+asyncio.run(main())
 ```
 
 ## 学习路线建议
@@ -86,4 +138,4 @@ python -m scaffold sdk
 5. **读 `providers/base.py`** — 理解模板方法和重试链
 6. **读 `facade.py`** — 理解如何把复杂系统包装成简单接口
 7. **尝试新增一个 Tool** — 在 `agent/tools/` 下新建文件，继承 `Tool`
-8. **尝试新增一个 Provider** — 在 `providers/` 下新建文件，注册到 `registry.py`
+8. **尝试新增一个 Provider** — 在 `providers/registry.py` 加一行 `ProviderSpec`，如需新 backend 则在 `factory.py` 加一个分支

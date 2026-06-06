@@ -102,9 +102,11 @@ class AgentLoop:
             await self.hook.before_iteration(ctx)
 
             # 调用 LLM（带重试）
+            # model 优先级：config["agents"]["model"] > config["model"] > provider 默认
+            model = self.config.get("agents", {}).get("model") or self.config.get("model")
             response = await self.provider.chat_with_retry(
                 messages=session.messages,
-                model=self.config.get("agents", {}).get("model"),
+                model=model,
             )
 
             if not response.ok:

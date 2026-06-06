@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from loguru import logger
@@ -22,10 +23,13 @@ def make_provider(config: dict[str, Any]) -> LLMProvider:
     """
     根据配置创建 LLM Provider 实例。
 
+    API Key 优先级：config["api_key"] > 环境变量（spec.env_key）
+
     config 示例：
         {
-            "provider": "demo",
-            "model": "demo-model"
+            "provider": "mimo",
+            "model": "mimo-v2.5-pro",
+            "api_key": "tp-xxx"
         }
     """
     provider_name = config.get("provider", "demo")
@@ -37,11 +41,16 @@ def make_provider(config: dict[str, Any]) -> LLMProvider:
         return DemoProvider()
 
     backend = spec.backend
-    api_key = config.get("api_key") or ""
+    # API Key 优先级：config > 环境变量
+    api_key = config.get("api_key") or os.environ.get(spec.env_key, "")
 
     if backend == "openai":
         from scaffold.providers.openai_provider import OpenAIProvider
-        return OpenAIProvider(api_key=api_key, api_base=spec.default_api_base)
+        model = config.get("model") or ""
+        kwargs = {"api_key": api_key, "api_base": spec.default_api_base}
+        if model:
+            kwargs["default_model"] = model
+        return OpenAIProvider(**kwargs)
 
     elif backend == "anthropic":
         from scaffold.providers.anthropic_provider import AnthropicProvider

@@ -62,7 +62,7 @@ class LLMProvider(ABC):
         messages: list[dict[str, Any]],
         model: str | None = None,
         max_tokens: int = 4096,
-        temperature: float = 0.7,
+        temperature: float = 0.3,
     ) -> LLMResponse:
         """
         发送一次 LLM 请求。子类必须实现。
@@ -93,10 +93,11 @@ class LLMProvider(ABC):
         这是基类提供的横切逻辑，子类不需要覆盖。
         """
         kw = dict(messages=messages, model=model, max_tokens=max_tokens, temperature=temperature)
-
+        # enumerate 包一层，同时返回 (下标, 值)：
         for attempt, delay in enumerate(self._RETRY_DELAYS):
             try:
                 response = await self._safe_chat(**kw)
+            # 任务被取消，直接抛出异常，不进行重试
             except asyncio.CancelledError:
                 raise
             except Exception as exc:

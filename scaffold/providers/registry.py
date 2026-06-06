@@ -49,6 +49,13 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://api.deepseek.com",
     ),
     ProviderSpec(
+        name="mimo",
+        backend="openai",
+        env_key="MIMO_API_KEY",
+        display_name="MiMo",
+        default_api_base="https://token-plan-cn.xiaomimimo.com/v1",
+    ),
+    ProviderSpec(
         name="demo",
         backend="demo",
         display_name="Demo (本地模拟)",

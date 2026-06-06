@@ -1,20 +1,57 @@
 """
-CLI 入口 — 展示两种运行模式。
+CLI 入口 — 展示三种运行模式。
 
 用法：
-    python -m scaffold.cli demo     # 自动演示模式
-    python -m scaffold.cli chat     # 交互式终端对话
-    python -m scaffold.cli sdk      # SDK 调用示例
+    python -m scaffold demo     # 自动演示模式（Demo Provider）
+    python -m scaffold chat     # 交互式终端对话
+    python -m scaffold sdk      # SDK 调用示例
+
+配置文件：~/.scaffold/config.json
+    {
+      "provider": "mimo",
+      "model": "mimo-v2.5-pro",
+      "api_key": "tp-xxx"
+    }
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import sys
+from pathlib import Path
 
 from loguru import logger
 
 from scaffold.facade import Nanobot
+
+_CONFIG_PATH = Path.home() / ".scaffold" / "config.json"
+
+
+def _load_provider_config() -> dict:
+    """
+    加载 Provider 配置。
+
+    优先级：环境变量 > 配置文件 > 默认 demo
+    """
+    # 1. 尝试从配置文件读取
+    file_config = {}
+    if _CONFIG_PATH.exists():
+        try:
+            file_config = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning("Failed to load config: {}", e)
+
+    # 2. 环境变量覆盖
+    api_key = os.environ.get("MIMO_API_KEY") or file_config.get("api_key", "")
+    model = os.environ.get("SCAFFOLD_MODEL") or file_config.get("model", "mimo-v2.5-pro")
+    provider = file_config.get("provider", "mimo")
+
+    # 3. 有 api_key 就用真实模型，否则 demo
+    if api_key:
+        return {"provider": provider, "model": model, "api_key": api_key}
+    return {"provider": "demo", "model": "demo-model"}
 
 
 async def run_demo() -> None:
@@ -49,9 +86,10 @@ async def run_chat() -> None:
     from scaffold.agent.tools.registry import ToolRegistry
     from scaffold.agent.hook import CompositeHook, LogHook
     from scaffold.providers.factory import make_provider
-    from scaffold.bus.events import OutboundMessage
 
-    config = {"provider": "demo", "model": "demo-model"}
+    config = _load_provider_config()
+    print(f"  Provider: {config['provider']}, Model: {config['model']}")
+
     bus = EventBus()
     provider = make_provider(config)
 
@@ -105,7 +143,10 @@ async def run_sdk() -> None:
     print("  SDK 调用示例")
     print("=" * 60)
 
-    bot = Nanobot.from_config({"provider": "demo", "model": "demo-model"})
+    config = _load_provider_config()
+    print(f"  Provider: {config['provider']}, Model: {config['model']}")
+
+    bot = Nanobot.from_config(config)
 
     # 简单调用
     result = await bot.run("hello")
